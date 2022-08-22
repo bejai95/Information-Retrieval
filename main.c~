@@ -1,0 +1,15 @@
+// main.c
+// Main file - mainly used for my testing, may need to delete later
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+#include "invertedIndex.h"
+
+int main(void) {
+    InvertedIndexBST tree = generateInvertedIndex("collection.txt");
+    printInvertedIndex(tree);
+    return 0; 
+}

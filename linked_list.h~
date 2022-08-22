@@ -1,0 +1,16 @@
+// Header file for the linked list file 
+
+#ifndef _LIST_GUARD
+#define _LIST_GUARD
+
+
+
+FileList new_file_node(char *filename);
+FileList insertFileNode(FileList l, char* filename);
+
+
+
+
+
+
+#endif

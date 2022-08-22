@@ -1,0 +1,16 @@
+// Header file for tree file 
+
+#ifndef _TREE_GUARD
+#define _TREE_GUARD
+
+
+InvertedIndexBST newNode(char *word);
+InvertedIndexBST insertNode(InvertedIndexBST t, char *word);
+
+
+
+
+
+
+
+#endif

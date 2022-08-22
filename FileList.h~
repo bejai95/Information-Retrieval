@@ -1,0 +1,22 @@
+// Assignment 1 20T3 COMP2521: Information Retrieval
+// This program was written by Bejai Cobbing (z5313120)
+
+// FileList.h
+// Header file for FileList.c
+
+#ifndef _FILELIST_GUARD
+#define _FILELIST_GUARD
+
+// Creates a new node containing the file name, returns a pointer to it
+FileList new_file_node(char *filename, char *word);
+
+// Inserts a node (containing a file name) into the FileList, in ascending
+// alphabetical order. Returns the head of the updated list. 
+FileList insertFileNode(FileList L, char* filename, char *word); 
+
+
+
+
+
+
+#endif

@@ -1,0 +1,82 @@
+// Implementation for linked list functions
+
+
+// Linked list needs to be alphabetically sorted 
+// Can just use strcpy again??
+// Need to figure out a way to count the frequency of the word in each file? - Could just count it within the initial while loop??
+// This seems like a really good option actually - It works for couting the number of words within the file but not for number of times for particular word.
+
+// Also count the total number of words within the document within the while loops 
+
+// Parts of this file have been adapted from tree.c which was adapted from the week 3 lectures
+
+#include <stdio.h> 
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+#include "invertedIndex.h"
+#include "linked_list.h"
+
+// Create a new node containing the file name
+FileList new_file_node(char *filename, char *word) {
+    FileList new = malloc(sizeof(struct FileListNode));
+    assert (new != NULL);
+    
+    // Malloc the string and then copy it across
+    new->filename = malloc((strlen(filename) + 1) * sizeof(char));
+    strcpy(new->filename, filename);
+    
+    // Calculate the relative term frequency of the word within the file
+    int words_in_file = 0;
+    int matches_in_file = 0; 
+    char word_in_file[MAX_WORD_LENGTH]; 
+    FILE *file_pntr = fopen(filename, "r"); 
+    while (fscanf(file_pntr, "%s", word_in_file) == 1) {
+        if (strcmp(word_in_file, word) == 0)
+            matches_in_file ++;
+        words_in_file ++;
+    }
+    fclose(file_pntr);
+    new->tf = matches_in_file / words_in_file;
+    
+    new->next = NULL;
+    return new;
+}
+
+// Insert a node (containing a file name) into the linked list, 
+// needs to be in alphabetical order. Return the head of the updated list. 
+FileList insertFileNode(FileList L, char* filename, char *word) {
+    
+    // If the list is empty then return a new list containing the node
+    if (L == NULL) 
+        return new_file_node(filename, word);
+        
+    FileList curr = L; 
+    FileList prev = NULL; 
+    
+    while (strcmp(filename, L->filename) >= 0 && curr != NULL) {
+        if (strcmp(filename, L->filename) == 0) {
+            // Duplicate file names should not be added to the linked list
+            return L
+        }
+        prev = curr;
+        curr = curr->next;
+    } // prev is now pointing to the node we should insert after
+    
+    FileList new = new_file_node(filename, word);
+        
+    
+    if (prev == NULL) { // Need to insert at the start of the linked list
+        new->next = L;
+        return new; 
+    }
+    
+    if (curr == NULL) // Need to insert at the end of the linked list
+        prev->next = new; 
+    else { // Inserting in the middle
+        new->next = curr;
+        prev->next = new;
+    }
+    return new;
+}

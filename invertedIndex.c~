@@ -1,0 +1,207 @@
+// Assignment 1 20T3 COMP2521: Information Retrieval
+// This program was written by Bejai Cobbing (z5313120)
+
+// invertedIndex.c 
+// This file contains functions relating to the inverted index
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <math.h>
+
+#include "invertedIndex.h"
+#include "InvertedIndexBST.h"
+#include "FileList.h"
+#include "TfIdfList.h"
+
+void printInvertedIndex_Real(InvertedIndexBST tree, FILE *fptr);
+int find_num_files(FileList L);
+double TfIdf_calculate(double tf, int num_files, int D);
+
+
+// Normalise a given string
+char *normaliseWord(char *str) {
+    // First get rid of all leading spaces
+    while (str[0] == ' ') {
+        // Move the pointer to the first element one byte right
+        str += sizeof(char);
+    }
+    // Now get rid of all trailing spaces
+    int last_character_index = strlen(str) - 1;
+    while (str[last_character_index] == ' ') {
+        str[last_character_index] = '\0';
+        last_character_index = strlen(str) - 1;
+    }
+    // Convert all characters to lowercase
+    int i = 0;
+    while (str[i]) { 
+        str[i] = tolower(str[i]);
+        i++;
+    }
+    // Remove punctuation marks if they appear at the end of the word 
+    // (only remove one punctuation mark)
+    last_character_index = strlen(str) - 1;
+    int ch = str[last_character_index];
+    if (ch == '.' || ch == ',' || ch == ';' || ch == '?') {
+        str[last_character_index] = '\0'; 
+    }
+    return str;
+}
+
+// Read the collection of files and generate inverted index
+InvertedIndexBST generateInvertedIndex(char *collectionFilename) {
+    InvertedIndexBST tree = NULL; 
+    
+    FILE *collection_pntr = fopen(collectionFilename, "r");
+    char filename[MAX_WORD_LENGTH];
+    
+    // Iterate through every file within the collection
+    while (fscanf(collection_pntr, "%s", filename) == 1) {
+        
+        // Open the file
+        FILE *file_pntr = fopen(filename, "r"); 
+        char word[MAX_WORD_LENGTH];
+        
+        // Scan all of the words in the file
+        while (fscanf(file_pntr, "%s", word) == 1) {
+            // Normalise the word
+            strcpy(word, normaliseWord(word));
+            
+            // Insert the word into the tree
+            tree = insertNode(tree, word);
+            
+            // Find the word on the tree and then add the file name 
+            // to its linked list
+            InvertedIndexBST word_node = findNode(tree, word);
+            word_node->fileList = insertFileNode(word_node->fileList, 
+                filename, word);
+        }
+        fclose(file_pntr);
+    }
+    fclose(collection_pntr); 
+    return tree;
+}
+
+// Output  the  given inverted index to a file named invertedIndex.txt. This 
+// code has been adapted from the week 3 lab: Binary Search Trees, which can be
+// accessed at https://webcms3.cse.unsw.edu.au/COMP2521/20T3/resources/52974
+void printInvertedIndex(InvertedIndexBST tree) {
+    // Open the file initially in write mode to clear the output from the 
+    // previous run of the program
+    FILE *fptr = fopen("invertedIndex.txt", "w");
+    printInvertedIndex_Real(tree, fptr);
+    fclose(fptr);
+    return;
+}
+    
+// Helper function, which contains most of the implementation of the 
+// printInvertedIndex function
+void printInvertedIndex_Real(InvertedIndexBST tree, FILE *fptr) {
+    // Base case
+    if (tree == NULL) return;
+    
+    printInvertedIndex_Real(tree->left, fptr);
+    
+    // Output the word
+    fprintf(fptr, "%s ", tree->word);
+    
+    // Output the file names and their relative term frequencies
+    FileList current = tree->fileList;
+    while (current != NULL) {
+        fprintf (fptr, "%s (%lf) ", current->filename, current->tf);
+        current = current->next;
+    }
+    fprintf(fptr, "\n"); 
+    
+    printInvertedIndex_Real(tree->right, fptr);
+    return;
+}  
+
+// Calculate the tf-idf for all of the files containing searchWord and return 
+// a linked list containing their file names and tf-idf's (ordered by tf-idf) 
+TfIdfList calculateTfIdf(InvertedIndexBST tree, char *searchWord, int D) {
+    TfIdfList list = NULL; 
+    
+    // Locate the search word on the binary search tree
+    InvertedIndexBST searchWord_node = findNode(tree, searchWord);
+    FileList curr = searchWord_node->fileList;
+    
+    // Find the number of files containing the search word
+    int num_files = find_num_files(curr); 
+    
+    // Iterate through the linked list of all file names that include searchWord
+    while (curr != NULL) {
+        // Calculate the tf-idf
+        double TfIdf = TfIdf_calculate(curr->tf, num_files, D); 
+        
+        // Insert a new node containing this filename and tf-idf 
+        // into the new linked list
+        list = insert_TfIdfList_node(list, curr->filename, TfIdf); 
+        
+        curr = curr->next;
+    }
+    return list; 
+}
+        
+// Find the number of files containing the search word
+int find_num_files(FileList L) {
+    FileList curr = L;
+    int i = 0;
+    while (curr != NULL) {
+        i++;
+        curr = curr->next;
+    }
+    return i;
+}
+    
+// Calculate the tf-idf for the file containing the word      
+double TfIdf_calculate(double tf, int num_files, int D) {
+    double idf_calculating = D / (num_files * 1.0);
+    double idf = log10(idf_calculating);
+    double TfIdf = tf * idf; 
+    return TfIdf;
+}
+
+// Calculate the tf-idf sum for all the files containing any searchWord and 
+// return a linked list containing their file names and tf-idf's 
+// (ordered by tf-idf) 
+TfIdfList retrieve(InvertedIndexBST tree, char *searchWords[], int D) {
+    TfIdfList list = NULL; 
+    /* FILE *collection_pntr = fopen(collectionFilename, "r");
+    char filename[MAX_WORD_LENGTH];
+    
+    // Iterate through every file within the collection
+    while (fscanf(collection_pntr, "%s", filename) == 1) {
+        double tfIdfSum = 0; 
+        
+        
+        
+        
+        // Try all of the searchWords 
+        while (searchWords[i] != '\0') {
+            InvertedIndexBST searchWord_node = findNode(tree, searchWords)
+            FileList curr = searchWord_node->fileList;
+            
+            // Find the number of files containing the current search word
+            int num_files = find_num_files(curr); 
+            
+            // Calculate the tf-idf and add it to the sum
+            double TfIdf = TfIdf_calculate(curr->tf, num_files, D); 
+            tfIdfSum += TfIdf;
+            
+            
+        
+    // Find the number of files containing any of the search words
+    
+    
+    */
+    
+    // Didn't finish in time 
+    return 
+    
+    
+    
+}
+
+
